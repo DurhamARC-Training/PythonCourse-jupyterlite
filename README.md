@@ -1,6 +1,10 @@
 # DurhamARC JupyterLite deployment repository
 
-This repository is not meant to be deployed on its own but the content is supposed to be filled by the notebooks and files provided in the repository. Paste this into a `.github/workflows/deploy.yml` and activate Github Pages
+This repository is not meant to be deployed on its own but the content is supposed to be filled by the notebooks and files provided in the repository. 
+
+For this to work the Course repository needs to contain a pip installable  `requirements.txt` with all non-jupyter dependencies.
+
+Paste this into a `.github/workflows/deploy.yml` within the course repository and activate Github Pages generated from Github Actions.
 
 ```
 name: Deploy Jupyter Notebooks to GitHub Pages
