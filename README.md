@@ -10,7 +10,7 @@ on:
     branches: [ main ]
 
 env:
-  TEMPLATE_REPO: 'DurhamARC-Training/PythonCourse-jupyterlite'
+  TEMPLATE_REPO: 'Niolon/PythonCourse-jupyterlite'
 jobs:
   build:
     runs-on: ubuntu-latest
