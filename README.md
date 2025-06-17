@@ -35,7 +35,7 @@ jobs:
       run: |
         python -m pip install -r requirements.txt
         
-            - name: Install content dependencies
+    - name: Install content dependencies
       run: |
         if [ -f content/requirements.txt ]; then
           echo "Found content/requirements.txt, installing dependencies..."
