@@ -14,7 +14,7 @@ on:
     branches: [ main ]
 
 env:
-  TEMPLATE_REPO: 'Niolon/PythonCourse-jupyterlite'
+  TEMPLATE_REPO: 'DurhamARC-Training/PythonCourse-jupyterlite'
 jobs:
   build:
     runs-on: ubuntu-latest
