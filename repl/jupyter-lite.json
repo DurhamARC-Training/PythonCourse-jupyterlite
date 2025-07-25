@@ -5,7 +5,17 @@
         "@jupyterlab/drawio-extension",
         "jupyterlab-kernel-spy",
         "jupyterlab-tour"
-      ]
+      ],
+      "appName": "jupyterlab-deck",
+      "exposeAppInBrowser": true,
+      "fileTypes": {
+          "plain": {
+              "extensions": [".txt", ".mplstyle", ".xyz"],
+              "fileFormat": "text",
+              "mimeTypes": ["text/plain"],
+              "name": "plain"
+          }
+      }
     }
   }
   
