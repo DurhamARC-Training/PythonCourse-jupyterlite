@@ -1,0 +1,12 @@
+{
+  "LiteBuildConfig": {
+    "extra_file_types": {
+      "plain": {
+        "extensions": [".txt", ".mplstyle", ".xyz"],
+        "fileFormat": "text",
+        "mimeTypes": ["text/plain"],
+        "name": "plain"
+      }
+    }
+  }
+}
