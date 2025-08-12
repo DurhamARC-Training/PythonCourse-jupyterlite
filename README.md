@@ -50,7 +50,6 @@ jobs:
         
     - name: Build the JupyterLite site
       run: |
-        cp README.md content
         jupyter lite build --contents content --output-dir dist
         
     - name: Upload artifact
