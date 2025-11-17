@@ -147,6 +147,7 @@ jobs:
 
     steps:
       - name: Checkout gh-pages branch
+        id: checkout-gh-pages
         uses: actions/checkout@v4
         with:
           ref: gh-pages
@@ -171,10 +172,14 @@ jobs:
       - name: Setup deployment directory
         run: |
           # Create or update the deployment directory structure
-          if [ -d "gh-pages-checkout" ]; then
+          # Check if gh-pages-checkout exists and has a .git directory (successful checkout)
+          if [ -d "gh-pages-checkout/.git" ]; then
+            echo "gh-pages branch exists, using existing checkout"
             cd gh-pages-checkout
           else
             # Initialize new gh-pages structure
+            echo "gh-pages branch doesn't exist, creating new one"
+            rm -rf gh-pages-checkout
             mkdir -p gh-pages-checkout
             cd gh-pages-checkout
             git init
@@ -271,7 +276,8 @@ jobs:
           git commit -m "Deploy branch ${{ needs.build.outputs.branch-name }} to ${{ needs.build.outputs.deploy-path }}" || echo "No changes to commit"
 
           # Push to gh-pages
-          git push origin gh-pages --force-with-lease
+          # Try force-with-lease first, fall back to regular push if branch doesn't exist remotely
+          git push origin gh-pages --force-with-lease || git push origin gh-pages
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

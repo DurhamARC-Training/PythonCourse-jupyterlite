@@ -15,6 +15,11 @@ on:
   push:
     branches: ['**']
 
+permissions:
+  contents: write  # Required to push to gh-pages branch
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
@@ -107,6 +112,11 @@ matplotlib>=3.7.0
 ### Basic Configuration
 
 ```yaml
+permissions:
+  contents: write  # Required to push to gh-pages branch
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
@@ -128,6 +138,11 @@ on:
   push:
     branches: [main]  # Only trigger on main
 
+permissions:
+  contents: write  # Required to push to gh-pages branch
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
@@ -141,6 +156,11 @@ jobs:
 If you fork this template:
 
 ```yaml
+permissions:
+  contents: write  # Required to push to gh-pages branch
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     uses: YourOrg/YourTemplate/.github/workflows/deploy-jupyterlite.yml@main
@@ -167,6 +187,11 @@ on:
       - 'feature/**'
       - 'fix/**'
 
+permissions:
+  contents: write  # Required to push to gh-pages branch
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
@@ -190,6 +215,11 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write  # Required to push to gh-pages branch
+  pages: write
+  id-token: write
+
 jobs:
   deploy:
     uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
@@ -211,26 +241,6 @@ After pushing a branch, check the **Actions** tab:
 2. Look for the **deploy** job
 3. The deployment URL is shown in the job summary
 4. Visit `https://<org>.github.io/<repo>/branch/<branch-name>/`
-
-### Finding All Deployments
-
-Create an `index.html` at the root of `gh-pages` branch to list all deployments:
-
-```html
-<!DOCTYPE html>
-<html>
-<head>
-  <title>JupyterLite Deployments</title>
-</head>
-<body>
-  <h1>Available Deployments</h1>
-  <ul>
-    <li><a href="./">Main</a> (Production)</li>
-    <li><a href="./branch/">Branches</a> (Development)</li>
-  </ul>
-</body>
-</html>
-```
 
 ---
 
@@ -272,11 +282,13 @@ uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyt
 
 ### Branch Deployment 404
 
-Branch deployments require the `gh-pages` branch to be initialized:
+The workflow automatically creates and manages the `gh-pages` branch:
 
-1. First push to `main` creates the `gh-pages` branch
-2. Subsequent branch pushes add subdirectories
-3. Wait a few minutes for GitHub Pages to update
+1. **First deployment** (to any branch) creates the `gh-pages` branch automatically
+2. Subsequent deployments update the branch with new content
+3. Wait a few minutes for GitHub Pages to update after the first deployment
+
+**Note:** The workflow handles the initial `gh-pages` branch creation automatically - no manual setup required!
 
 ### Search Engines Still Indexing Branches
 
@@ -334,6 +346,11 @@ on:
   push:
     branches: ['**']
   delete:  # Trigger on branch deletion
+
+permissions:
+  contents: write  # Required to push to gh-pages branch
+  pages: write
+  id-token: write
 
 jobs:
   deploy:
