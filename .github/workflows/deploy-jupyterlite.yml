@@ -200,6 +200,21 @@ jobs:
             cp -r ../artifact/* "$DEPLOY_PATH/"
           else
             # Copy to root (main branch)
+            # Keep the branch/ directory but remove everything else
+            if [ -d "branch" ]; then
+              # Save branch directory
+              mv branch ../branch-backup
+            fi
+            
+            # Remove all files and directories in root
+            rm -rf * .[!.]* 2>/dev/null || true
+            
+            # Restore branch directory if it existed
+            if [ -d "../branch-backup" ]; then
+              mv ../branch-backup branch
+            fi
+            
+            # Copy new main deployment
             cp -r ../artifact/* .
           fi
 
