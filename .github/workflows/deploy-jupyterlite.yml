@@ -197,14 +197,14 @@ jobs:
           if [ "$DEPLOY_PATH" != "." ]; then
             mkdir -p "$DEPLOY_PATH"
             # Copy built site to branch subdirectory
-            cp -r ../artifact/* "$DEPLOY_PATH/"
+            cp -r ../artifact/. "$DEPLOY_PATH/"
           else
             # Copy to root (main branch)
             # Keep the branch/ directory and .git, but remove everything else
             find . -mindepth 1 -maxdepth 1 ! -name 'branch' ! -name '.git' -exec rm -rf {} +
             
             # Copy new main deployment
-            cp -r ../artifact/* .
+            cp -r ../artifact/. .
           fi
 
       - name: Checkout content repository for branch list
