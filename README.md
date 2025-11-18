@@ -17,8 +17,6 @@ on:
 
 permissions:
   contents: write  # Required to push to gh-pages branch
-  pages: write
-  id-token: write
 
 jobs:
   deploy:
@@ -29,8 +27,11 @@ jobs:
 Then enable GitHub Pages in your repository:
 
 1. Go to **Settings** → **Pages**
-2. Under **Source**, select **GitHub Actions**
-3. Save the settings
+2. Under **Source**, select **Deploy from a branch**
+3. Select **gh-pages** branch and **/ (root)** folder
+4. Click **Save**
+
+**Note:** The `gh-pages` branch will be created automatically on the first workflow run. If it doesn't exist yet, just run the workflow once and then configure Pages.
 
 That's it! Now every push will trigger a deployment.
 
@@ -114,8 +115,6 @@ matplotlib>=3.7.0
 ```yaml
 permissions:
   contents: write  # Required to push to gh-pages branch
-  pages: write
-  id-token: write
 
 jobs:
   deploy:
@@ -140,8 +139,6 @@ on:
 
 permissions:
   contents: write  # Required to push to gh-pages branch
-  pages: write
-  id-token: write
 
 jobs:
   deploy:
@@ -158,8 +155,6 @@ If you fork this template:
 ```yaml
 permissions:
   contents: write  # Required to push to gh-pages branch
-  pages: write
-  id-token: write
 
 jobs:
   deploy:
@@ -189,8 +184,6 @@ on:
 
 permissions:
   contents: write  # Required to push to gh-pages branch
-  pages: write
-  id-token: write
 
 jobs:
   deploy:
@@ -217,8 +210,6 @@ on:
 
 permissions:
   contents: write  # Required to push to gh-pages branch
-  pages: write
-  id-token: write
 
 jobs:
   deploy:
@@ -276,9 +267,10 @@ uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyt
 
 ### Deployment Not Appearing
 
-1. **Check GitHub Pages is enabled**: Settings → Pages → Source: "GitHub Actions"
+1. **Check GitHub Pages is enabled**: Settings → Pages → Source: "Deploy from a branch" → Branch: "gh-pages" → Folder: "/ (root)"
 2. **Check workflow permissions**: Settings → Actions → General → Workflow permissions: "Read and write permissions"
 3. **Check Actions logs**: Actions tab → Click failed/successful run → View logs
+4. **Verify gh-pages branch exists**: After the first workflow run, check that the gh-pages branch was created
 
 ### Branch Deployment 404
 
@@ -349,8 +341,6 @@ on:
 
 permissions:
   contents: write  # Required to push to gh-pages branch
-  pages: write
-  id-token: write
 
 jobs:
   deploy:

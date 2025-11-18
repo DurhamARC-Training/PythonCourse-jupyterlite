@@ -135,13 +135,11 @@ jobs:
       (needs.build.outputs.is-main == 'true' || inputs.deploy-branches == true)
 
     permissions:
-      pages: write
-      id-token: write
       contents: write
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}${{ needs.build.outputs.deploy-path }}
+      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ needs.build.outputs.deploy-path }}
 
     runs-on: ubuntu-latest
 
@@ -183,8 +181,12 @@ jobs:
             mkdir -p gh-pages-checkout
             cd gh-pages-checkout
             git init
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
             git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
             git checkout -b gh-pages
+            # Create initial commit
+            git commit --allow-empty -m "Initialize gh-pages branch"
           fi
 
           # Create target directory
@@ -197,11 +199,6 @@ jobs:
             # Copy to root (main branch)
             cp -r ../artifact/* .
           fi
-
-      - name: Deploy to GitHub Pages (main branch)
-        if: needs.build.outputs.is-main == 'true'
-        id: deployment
-        uses: actions/deploy-pages@v4
 
       - name: Checkout content repository for branch list
         if: needs.build.outputs.is-main != 'true' && inputs.cleanup-stale-branches == true
@@ -262,18 +259,21 @@ jobs:
             done
           fi
 
-      - name: Deploy to GitHub Pages (branch subdirectory)
-        if: needs.build.outputs.is-main != 'true'
+      - name: Deploy to GitHub Pages
         run: |
           cd gh-pages-checkout
 
-          # Configure git
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Configure git (if not already configured during initialization)
+          git config user.name "github-actions[bot]" || true
+          git config user.email "github-actions[bot]@users.noreply.github.com" || true
 
           # Add and commit changes
           git add .
-          git commit -m "Deploy branch ${{ needs.build.outputs.branch-name }} to ${{ needs.build.outputs.deploy-path }}" || echo "No changes to commit"
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Deploy ${{ needs.build.outputs.branch-name }} to ${{ needs.build.outputs.deploy-path }}"
+          fi
 
           # Push to gh-pages
           # Try force-with-lease first, fall back to regular push if branch doesn't exist remotely
