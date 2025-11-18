@@ -144,16 +144,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Ensure gh-pages branch exists
+        run: |
+          # Clone the repository
+          git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" repo-check
+          cd repo-check
+          
+          # Check if gh-pages branch exists
+          if ! git ls-remote --heads origin | grep -q "refs/heads/gh-pages"; then
+            echo "gh-pages branch doesn't exist, creating it..."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git checkout --orphan gh-pages
+            git rm -rf . || true
+            git commit --allow-empty -m "Initialize gh-pages branch"
+            git push origin gh-pages
+            echo "gh-pages branch created"
+          else
+            echo "gh-pages branch already exists"
+          fi
+          
+          cd ..
+          rm -rf repo-check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Checkout gh-pages branch
-        id: checkout-gh-pages
         uses: actions/checkout@v4
         with:
           ref: gh-pages
-          # Use a different path to avoid conflicts
           path: gh-pages-checkout
-          # Don't fail if gh-pages doesn't exist
           fetch-depth: 0
-        continue-on-error: true
 
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -169,26 +190,7 @@ jobs:
 
       - name: Setup deployment directory
         run: |
-          # Create or update the deployment directory structure
-          # Check if gh-pages-checkout exists and has a .git directory (successful checkout)
-          if [ -d "gh-pages-checkout/.git" ]; then
-            echo "gh-pages branch exists, using existing checkout"
-            cd gh-pages-checkout
-          else
-            # Initialize new gh-pages structure
-            echo "gh-pages branch doesn't exist, creating new one"
-            rm -rf gh-pages-checkout
-            mkdir -p gh-pages-checkout
-            cd gh-pages-checkout
-            git init
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            # Use authenticated URL for pushing
-            git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-            git checkout -b gh-pages
-            # Create initial commit
-            git commit --allow-empty -m "Initialize gh-pages branch"
-          fi
+          cd gh-pages-checkout
 
           # Create target directory
           DEPLOY_PATH="${{ needs.build.outputs.deploy-path }}"
@@ -200,8 +202,6 @@ jobs:
             # Copy to root (main branch)
             cp -r ../artifact/* .
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout content repository for branch list
         if: needs.build.outputs.is-main != 'true' && inputs.cleanup-stale-branches == true
@@ -213,12 +213,6 @@ jobs:
       - name: Cleanup stale branch deployments
         if: needs.build.outputs.is-main != 'true' && inputs.cleanup-stale-branches == true
         run: |
-          # Only run cleanup if gh-pages-checkout exists (skip on first deployment)
-          if [ ! -d "gh-pages-checkout/.git" ]; then
-            echo "gh-pages branch doesn't exist yet, skipping cleanup"
-            exit 0
-          fi
-
           # Get list of all active branches from the remote repository
           cd content-repo
           ACTIVE_BRANCHES=$(git ls-remote --heads origin | awk '{print $2}' | sed 's|refs/heads/||' | sort)
@@ -270,35 +264,23 @@ jobs:
 
       - name: Deploy to GitHub Pages
         run: |
-          # Ensure gh-pages-checkout directory exists
-          if [ ! -d "gh-pages-checkout" ]; then
-            echo "Error: gh-pages-checkout directory not found"
-            exit 1
-          fi
-
           cd gh-pages-checkout
 
-          # Configure git (if not already configured during initialization)
-          git config user.name "github-actions[bot]" || true
-          git config user.email "github-actions[bot]@users.noreply.github.com" || true
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
           # Add and commit changes
           git add .
           if git diff --staged --quiet; then
             echo "No changes to commit"
-          else
-            git commit -m "Deploy ${{ needs.build.outputs.branch-name }} to ${{ needs.build.outputs.deploy-path }}"
+            exit 0
           fi
+          
+          git commit -m "Deploy ${{ needs.build.outputs.branch-name }} to ${{ needs.build.outputs.deploy-path }}"
 
-          # Push to gh-pages
-          # For first push, set upstream; otherwise use force-with-lease
-          if git ls-remote --heads origin | grep -q "refs/heads/gh-pages"; then
-            # Branch exists remotely, use force-with-lease
-            git push origin gh-pages --force-with-lease
-          else
-            # First push, set upstream
-            git push --set-upstream origin gh-pages
-          fi
+          # Push to gh-pages (branch is guaranteed to exist)
+          git push origin gh-pages
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
