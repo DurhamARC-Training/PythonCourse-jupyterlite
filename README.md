@@ -2,9 +2,9 @@
 
 Deploy Jupyter notebooks as interactive JupyterLite sites on GitHub Pages with automatic branch deployments.
 
-## Quick Start (2 Steps)
+## Quick Start
 
-### 1. Create Workflow File
+### 1. Create Workflow Files
 
 Create `.github/workflows/deploy.yml` in your repository:
 
@@ -21,6 +21,23 @@ permissions:
 jobs:
   deploy:
     uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
+    secrets: inherit
+```
+
+**Optional:** For immediate cleanup when branches are deleted, also create `.github/workflows/cleanup.yml`:
+
+```yaml
+name: Cleanup Deleted Branch
+
+on:
+  delete
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/cleanup-branch-deployment.yml@main
     secrets: inherit
 ```
 
@@ -88,84 +105,20 @@ jobs:
     secrets: inherit
 ```
 
-### Deploy Only Main Branch
+## Automatic Cleanup of Deleted Branches
+
+Stale branch deployments are automatically removed on every push (enabled by default) in addition to the optional cleanup on branch deletion.
+
+To disable:
 
 ```yaml
-on:
-  push:
-    branches: [main]
-
 jobs:
   deploy:
     uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
     with:
-      deploy-branches: false
+      cleanup-stale-branches: false
     secrets: inherit
 ```
-
-### Deploy Specific Branch Patterns
-
-```yaml
-on:
-  push:
-    branches:
-      - main
-      - 'feature/**'
-      - 'release/**'
-
-jobs:
-  deploy:
-    uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
-    secrets: inherit
-```
-
-## Automatic Cleanup of Deleted Branches
-
-**Cleanup happens automatically in two ways:**
-
-### 1. On Every Push (Default - Enabled)
-
-When you push to any branch, stale deployments are automatically removed:
-
-```yaml
-# Default behavior - cleanup is enabled
-jobs:
-  deploy:
-    uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
-    secrets: inherit
-```
-
-**Example:** Delete `feature-x` locally, push to `main` → `feature-x` deployment is removed.
-
-To disable:
-```yaml
-with:
-  cleanup-stale-branches: false
-```
-
-### 2. Immediate Cleanup on Branch Delete (Optional)
-
-For instant cleanup when you delete a branch on GitHub:
-
-```yaml
-on:
-  push:
-    branches: ['**']
-  delete:  # Add this trigger
-
-jobs:
-  deploy:
-    if: github.event_name == 'push'
-    uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
-    secrets: inherit
-
-  cleanup:
-    if: github.event_name == 'delete'
-    uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/cleanup-branch-deployment.yml@main
-    secrets: inherit
-```
-
-This removes the deployment immediately without waiting for the next push.
 
 ## Troubleshooting
 
@@ -178,38 +131,10 @@ This removes the deployment immediately without waiting for the next push.
 
 ### Workflow Fails with "gh-pages does not exist"
 
-The workflow now automatically creates the `gh-pages` branch on first run. If you still see this error, it may be a transient issue - re-run the workflow. Otherwise raise an issue here.
+The workflow now automatically creates the `gh-pages` branch on first run. If you still see this error, it may be a transient issue - re-run the workflow. Otherwise raise an issue in the template repository.
 
 ### Branch Deployment Shows 404
 
 - First deployment to any branch creates the `gh-pages` branch
 - Wait 2-3 minutes for GitHub Pages to update
 - Check that the branch deployment exists at: `https://org.github.io/repo/branch/branch-name/`
-
-### Custom Domain
-
-Branch deployments work with custom domains:
-- Main: `https://customdomain.com/`
-- Branches: `https://customdomain.com/branch/feature-x/`
-
-## Version Pinning
-
-**Recommended:** Use `@main` for automatic updates:
-```yaml
-uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@main
-```
-
-**Stable:** Pin to a specific version:
-```yaml
-uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/deploy-jupyterlite.yml@v1.0.0
-```
-
----
-
-## Why Use This Template?
-
-- **Automatic updates** - bug fixes and features apply to all repos  
-- **No gh-pages setup** - branch created automatically  
-- **Branch deployments** - preview changes before merging  
-- **Auto-cleanup** - no stale deployments  
-- **Consistent** - all repos use the same proven workflow  
