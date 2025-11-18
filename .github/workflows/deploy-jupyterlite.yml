@@ -198,6 +198,8 @@ jobs:
             mkdir -p "$DEPLOY_PATH"
             # Copy built site to branch subdirectory
             cp -r ../artifact/. "$DEPLOY_PATH/"
+            # Ensure Jekyll is disabled for the whole site
+            touch .nojekyll
           else
             # Copy to root (main branch)
             # Keep the branch/ directory and .git, but remove everything else
@@ -205,6 +207,8 @@ jobs:
             
             # Copy new main deployment
             cp -r ../artifact/. .
+            # Ensure Jekyll is disabled at site root
+            touch .nojekyll
           fi
 
       - name: Checkout content repository for branch list
