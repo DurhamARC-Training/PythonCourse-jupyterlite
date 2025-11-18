@@ -183,7 +183,8 @@ jobs:
             git init
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git remote add origin "${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}.git"
+            # Use authenticated URL for pushing
+            git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
             git checkout -b gh-pages
             # Create initial commit
             git commit --allow-empty -m "Initialize gh-pages branch"
@@ -199,6 +200,8 @@ jobs:
             # Copy to root (main branch)
             cp -r ../artifact/* .
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Checkout content repository for branch list
         if: needs.build.outputs.is-main != 'true' && inputs.cleanup-stale-branches == true
@@ -288,8 +291,14 @@ jobs:
           fi
 
           # Push to gh-pages
-          # Try force-with-lease first, fall back to regular push if branch doesn't exist remotely
-          git push origin gh-pages --force-with-lease || git push origin gh-pages
+          # For first push, set upstream; otherwise use force-with-lease
+          if git ls-remote --heads origin | grep -q "refs/heads/gh-pages"; then
+            # Branch exists remotely, use force-with-lease
+            git push origin gh-pages --force-with-lease
+          else
+            # First push, set upstream
+            git push --set-upstream origin gh-pages
+          fi
 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
