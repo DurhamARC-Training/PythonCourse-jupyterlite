@@ -210,6 +210,12 @@ jobs:
       - name: Cleanup stale branch deployments
         if: needs.build.outputs.is-main != 'true' && inputs.cleanup-stale-branches == true
         run: |
+          # Only run cleanup if gh-pages-checkout exists (skip on first deployment)
+          if [ ! -d "gh-pages-checkout/.git" ]; then
+            echo "gh-pages branch doesn't exist yet, skipping cleanup"
+            exit 0
+          fi
+
           # Get list of all active branches from the remote repository
           cd content-repo
           ACTIVE_BRANCHES=$(git ls-remote --heads origin | awk '{print $2}' | sed 's|refs/heads/||' | sort)
@@ -261,6 +267,12 @@ jobs:
 
       - name: Deploy to GitHub Pages
         run: |
+          # Ensure gh-pages-checkout directory exists
+          if [ ! -d "gh-pages-checkout" ]; then
+            echo "Error: gh-pages-checkout directory not found"
+            exit 1
+          fi
+
           cd gh-pages-checkout
 
           # Configure git (if not already configured during initialization)
