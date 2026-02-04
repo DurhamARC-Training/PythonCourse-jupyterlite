@@ -1,0 +1,294 @@
+name: Deploy JupyterLite (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: 'Python version to use'
+        required: false
+        type: string
+        default: '3.11'
+      template-repo:
+        description: 'Template repository (org/repo format)'
+        required: false
+        type: string
+        default: 'DurhamARC-Training/PythonCourse-jupyterlite'
+      deploy-branches:
+        description: 'Whether to deploy non-main branches to subdirectories'
+        required: false
+        type: boolean
+        default: true
+      cleanup-stale-branches:
+        description: 'Remove deployments for branches that no longer exist'
+        required: false
+        type: boolean
+        default: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      branch-name: ${{ steps.branch-info.outputs.branch-name }}
+      is-main: ${{ steps.branch-info.outputs.is-main }}
+      deploy-path: ${{ steps.branch-info.outputs.deploy-path }}
+
+    steps:
+    - name: Get branch information
+      id: branch-info
+      run: |
+        # Function to sanitize branch name (replace / with -)
+        sanitize_branch_name() {
+          echo "$1" | sed 's/\//-/g'
+        }
+
+        # Extract branch name from GITHUB_REF
+        BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+        SAFE_BRANCH_NAME=$(sanitize_branch_name "${BRANCH_NAME}")
+        echo "branch-name=${BRANCH_NAME}" >> $GITHUB_OUTPUT
+
+        # Determine if this is the main branch
+        if [[ "${GITHUB_REF}" == "refs/heads/main" ]] || [[ "${GITHUB_REF}" == "refs/heads/master" ]]; then
+          echo "is-main=true" >> $GITHUB_OUTPUT
+          echo "deploy-path=." >> $GITHUB_OUTPUT
+        else
+          echo "is-main=false" >> $GITHUB_OUTPUT
+          echo "deploy-path=branch/${SAFE_BRANCH_NAME}" >> $GITHUB_OUTPUT
+        fi
+
+        echo "Branch: ${BRANCH_NAME}"
+        echo "Is main: $(if [[ "${GITHUB_REF}" == "refs/heads/main" ]] || [[ "${GITHUB_REF}" == "refs/heads/master" ]]; then echo "true"; else echo "false"; fi)"
+        if [[ "${GITHUB_REF}" == "refs/heads/main" ]] || [[ "${GITHUB_REF}" == "refs/heads/master" ]]; then
+          echo "Deploy path: ."
+        else
+          echo "Deploy path: branch/${SAFE_BRANCH_NAME}"
+        fi
+
+    - name: Checkout template repository
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ inputs.template-repo }}
+
+    - name: Checkout content repository
+      uses: actions/checkout@v4
+      with:
+        path: content
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install template dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install -r requirements.txt
+
+    - name: Install content dependencies
+      run: |
+        if [ -f content/requirements.txt ]; then
+          echo "Found content/requirements.txt, installing dependencies..."
+          python -m pip install -r content/requirements.txt
+        else
+          echo "No content/requirements.txt found, skipping content dependencies"
+        fi
+
+    - name: Build the JupyterLite site
+      run: |
+        jupyter lite build --contents content --output-dir dist
+
+    - name: Add robots.txt for non-main branches
+      if: steps.branch-info.outputs.is-main != 'true' && inputs.deploy-branches == true
+      run: |
+        # Create robots.txt to prevent search engine indexing
+        cat > dist/robots.txt << 'EOF'
+        # Prevent indexing of branch deployments
+        User-agent: *
+        Disallow: /
+        EOF
+
+        echo "Created robots.txt to prevent search engine indexing of branch deployment"
+
+    - name: Add noindex meta tag for non-main branches
+      if: steps.branch-info.outputs.is-main != 'true' && inputs.deploy-branches == true
+      run: |
+        # Find all HTML files and add noindex meta tag
+        find dist -name "*.html" -type f | while read -r file; do
+          # Check if file already has a <head> tag
+          if grep -q "<head>" "$file"; then
+            # Add meta tag after <head>
+            sed -i '/<head>/a\    <meta name="robots" content="noindex, nofollow">' "$file"
+          fi
+        done
+
+        echo "Added noindex meta tags to HTML files"
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ./dist
+
+  deploy:
+    needs: build
+    # Deploy main branch to root, other branches to subdirectories (if enabled)
+    if: |
+      github.event_name == 'push' &&
+      (needs.build.outputs.is-main == 'true' || inputs.deploy-branches == true)
+
+    permissions:
+      contents: write
+
+    environment:
+      name: github-pages
+      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/${{ needs.build.outputs.deploy-path }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ensure gh-pages branch exists
+        run: |
+          # Clone the repository
+          git clone "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" repo-check
+          cd repo-check
+          
+          # Check if gh-pages branch exists
+          if ! git ls-remote --heads origin | grep -q "refs/heads/gh-pages"; then
+            echo "gh-pages branch doesn't exist, creating it..."
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git checkout --orphan gh-pages
+            git rm -rf . || true
+            git commit --allow-empty -m "Initialize gh-pages branch"
+            git push origin gh-pages
+            echo "gh-pages branch created"
+          else
+            echo "gh-pages branch already exists"
+          fi
+          
+          cd ..
+          rm -rf repo-check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          path: gh-pages-checkout
+          fetch-depth: 0
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: artifact
+
+      - name: Extract artifact
+        run: |
+          cd artifact
+          tar -xf artifact.tar
+          rm artifact.tar
+
+      - name: Setup deployment directory
+        run: |
+          cd gh-pages-checkout
+
+          # Create target directory
+          DEPLOY_PATH="${{ needs.build.outputs.deploy-path }}"
+          if [ "$DEPLOY_PATH" != "." ]; then
+            mkdir -p "$DEPLOY_PATH"
+            # Copy built site to branch subdirectory
+            cp -r ../artifact/. "$DEPLOY_PATH/"
+            # Ensure Jekyll is disabled for the whole site
+            touch .nojekyll
+          else
+            # Copy to root (main branch)
+            # Keep the branch/ directory and .git, but remove everything else
+            find . -mindepth 1 -maxdepth 1 ! -name 'branch' ! -name '.git' -exec rm -rf {} +
+            
+            # Copy new main deployment
+            cp -r ../artifact/. .
+            # Ensure Jekyll is disabled at site root
+            touch .nojekyll
+          fi
+
+      - name: Checkout content repository for branch list
+        if: needs.build.outputs.is-main != 'true' && inputs.cleanup-stale-branches == true
+        uses: actions/checkout@v4
+        with:
+          path: content-repo
+          fetch-depth: 0
+
+      - name: Cleanup stale branch deployments
+        if: needs.build.outputs.is-main != 'true' && inputs.cleanup-stale-branches == true
+        run: |
+          # Get list of all active branches from the remote repository
+          cd content-repo
+          ACTIVE_BRANCHES=$(git ls-remote --heads origin | awk '{print $2}' | sed 's|refs/heads/||' | sort)
+          cd ../gh-pages-checkout
+
+          echo "Active branches in content repository:"
+          echo "$ACTIVE_BRANCHES"
+
+          # Function to sanitize branch name (replace / with -)
+          sanitize_branch_name() {
+            echo "$1" | sed 's/\//-/g'
+          }
+
+          # Create a set of sanitized branch names for quick lookup
+          SANITIZED_BRANCHES=""
+          while IFS= read -r branch; do
+            if [ -n "$branch" ]; then
+              sanitized=$(sanitize_branch_name "$branch")
+              SANITIZED_BRANCHES="${SANITIZED_BRANCHES}${sanitized}"$'\n'
+            fi
+          done <<< "$ACTIVE_BRANCHES"
+
+          echo ""
+          echo "Sanitized active branches:"
+          echo "$SANITIZED_BRANCHES"
+
+          # Check if branch directory exists
+          if [ -d "branch" ]; then
+            echo ""
+            echo "Checking for stale branch deployments..."
+
+            # List all deployed branches
+            for deployed_dir in branch/*/; do
+              if [ -d "$deployed_dir" ]; then
+                # Extract the sanitized branch name from the directory
+                deployed_branch=$(basename "$deployed_dir")
+
+                # Check if this sanitized name exists in our active branches
+                if ! echo "$SANITIZED_BRANCHES" | grep -q "^${deployed_branch}$"; then
+                  echo "Found stale deployment: $deployed_dir (branch no longer exists)"
+                  rm -rf "$deployed_dir"
+                  echo "Removed stale deployment: $deployed_dir"
+                else
+                  echo "Keeping deployment: $deployed_dir (branch still exists)"
+                fi
+              fi
+            done
+          fi
+
+      - name: Deploy to GitHub Pages
+        run: |
+          cd gh-pages-checkout
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Add and commit changes
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          
+          git commit -m "Deploy ${{ needs.build.outputs.branch-name }} to ${{ needs.build.outputs.deploy-path }}"
+
+          # Push to gh-pages (branch is guaranteed to exist)
+          git push origin gh-pages
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

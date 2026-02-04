@@ -1,0 +1,53 @@
+name: Cleanup Branch Deployment (Reusable)
+
+on:
+  workflow_call:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    # Only run when a branch is deleted
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+          fetch-depth: 0
+
+      - name: Remove branch deployment
+        run: |
+          # Get the deleted branch name
+          BRANCH_NAME="${{ github.event.ref }}"
+
+          # Sanitize branch name for directory (replace / with -)
+          SAFE_BRANCH_NAME=$(echo "${BRANCH_NAME}" | sed 's/\//-/g')
+
+          DEPLOY_PATH="branch/${SAFE_BRANCH_NAME}"
+
+          echo "Cleaning up deployment for deleted branch: ${BRANCH_NAME}"
+          echo "Deployment path: ${DEPLOY_PATH}"
+
+          # Check if the deployment directory exists
+          if [ -d "${DEPLOY_PATH}" ]; then
+            # Remove the deployment directory
+            rm -rf "${DEPLOY_PATH}"
+
+            # Configure git
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+
+            # Commit and push changes
+            git add .
+            git commit -m "Remove deployment for deleted branch: ${BRANCH_NAME}"
+            git push origin gh-pages
+
+            echo "Successfully removed deployment for branch: ${BRANCH_NAME}"
+          else
+            echo "No deployment found for branch: ${BRANCH_NAME}"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
