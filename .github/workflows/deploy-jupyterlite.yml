@@ -85,8 +85,7 @@ jobs:
 
     - name: Build the JupyterLite site
       run: |
-        # By setting -lite-dir to content -> reading a potential requirements.txt
-        jupyter lite build --contents content --lite-dir content --output-dir dist
+        jupyter lite build --contents content --output-dir dist
 
     - name: Add robots.txt for non-main branches
       if: steps.branch-info.outputs.is-main != 'true' && inputs.deploy-branches == true
