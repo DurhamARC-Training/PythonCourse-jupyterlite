@@ -7,7 +7,19 @@
       "jupyterlab-tour"
     ],
     "appName": "jupyterlab-deck",
-    "exposeAppInBrowser": true
+    "exposeAppInBrowser": true,
+    "ContentsManager": {
+      "allow_hidden": true,
+      "hide_globs": [
+        "startup",
+        "requirements.txt",
+        "__pycache__",
+        "notebook_settings.json",
+        "environment.yml",
+        "README.md",
+        "pull_files_*.py"
+      ]
+    }
   }
 }
   
