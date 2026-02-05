@@ -1,5 +1,13 @@
 {
   "LiteBuildConfig": {
+    "ignore_contents": [
+      "requirements.txt",
+      "**/__pycache__/**",
+      "notebook_settings.json",
+      "environment.yml",
+      "README.md",
+      "pull_files_*.py"
+    ],
     "extra_file_types": {
       "mplstyle": {
         "name": "mplstyle",
