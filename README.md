@@ -40,8 +40,12 @@ jobs:
     uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/cleanup-branch-deployment.yml@main
     secrets: inherit
 ```
+### 2. Make sure that all other GitHub branches can deploy to the gh-pages branch
+1. Go to **Settings** → **Environments**
+2. If there is a ruleset for github-pages edit it.
+3. Change **Deployment branches and tags** to **No restriction**
 
-### 2. Enable GitHub Pages
+### 3. Enable GitHub Pages
 
 After the first workflow run:
 
@@ -49,6 +53,8 @@ After the first workflow run:
 2. Source: **Deploy from a branch**
 3. Branch: **gh-pages** / **/ (root)**
 4. Click **Save**
+
+
 
 **Done!** Your notebooks are now deployed. The workflow automatically creates the `gh-pages` branch on first run.
 
