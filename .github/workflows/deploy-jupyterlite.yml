@@ -83,18 +83,10 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install -r requirements.txt
 
-    - name: Install content dependencies
-      run: |
-        if [ -f content/requirements.txt ]; then
-          echo "Found content/requirements.txt, installing dependencies..."
-          python -m pip install -r content/requirements.txt
-        else
-          echo "No content/requirements.txt found, skipping content dependencies"
-        fi
-
     - name: Build the JupyterLite site
       run: |
-        jupyter lite build --contents content --output-dir dist
+        # By setting -lite-dir to content -> reading a potential requirements.txt
+        jupyter lite build --contents content --lite-dir content --output-dir dist
 
     - name: Add robots.txt for non-main branches
       if: steps.branch-info.outputs.is-main != 'true' && inputs.deploy-branches == true
