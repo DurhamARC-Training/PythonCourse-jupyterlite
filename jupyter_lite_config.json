@@ -2,7 +2,7 @@
   "LiteBuildConfig": {
     "ignore_contents": [
       "requirements.txt",
-      "**/__pycache__/**",
+      "__pycache__",
       "notebook_settings.json",
       "environment.yml",
       "README.md",
