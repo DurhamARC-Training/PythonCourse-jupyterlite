@@ -25,5 +25,8 @@
         "name": "xyz"
       }
     }
+  },
+  "ContentsManager": {
+    "allow_hidden": true
   }
 }
