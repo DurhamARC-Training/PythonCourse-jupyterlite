@@ -5,7 +5,6 @@
       ".jupyter",
       ".vscode",
       ".ipynb_checkpoints",
-      "requirements.txt",
       "__pycache__",
       "notebook_settings.json",
       "environment.yml",
