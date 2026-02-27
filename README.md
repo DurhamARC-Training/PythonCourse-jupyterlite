@@ -54,6 +54,9 @@ After the first workflow run:
 3. Branch: **gh-pages** / **/ (root)**
 4. Click **Save**
 
+### 4. Make sure no automatic protection rules have been generated.
+1. Repeat Step 2.
+
 
 
 **Done!** Your notebooks are now deployed. The workflow automatically creates the `gh-pages` branch on first run.
