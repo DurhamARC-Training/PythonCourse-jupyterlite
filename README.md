@@ -40,6 +40,24 @@ jobs:
     uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/cleanup-branch-deployment.yml@main
     secrets: inherit
 ```
+
+**Optional:** Add a PR comment workflow for deployment previews on new PRs by creating `.github/workflows/pr-comment.yml`:
+
+```yaml
+name: Add PR Deployment Comment
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  comment:
+    uses: DurhamARC-Training/PythonCourse-jupyterlite/.github/workflows/pr-comment-generation.yml@main
+```
+
 ### 2. Make sure that all other GitHub branches can deploy to the gh-pages branch
 1. Go to **Settings** → **Environments**
 2. If there is a ruleset for github-pages edit it.
